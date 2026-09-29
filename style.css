@@ -1,0 +1,224 @@
+.ludo { display: flex; flex-direction: column; gap: 12px; }
+
+/* ---------- status ---------- */
+.ludo .turn { margin: 0; min-height: 50px; text-align: center; line-height: 1.3; }
+.ludo .turn .sw {
+  flex: none; width: 16px; height: 16px; border-radius: 50%; background: var(--c);
+  box-shadow: 0 0 0 3px #fff, 0 0 0 5px color-mix(in srgb, var(--c) 55%, transparent);
+}
+
+/* ---------- board ---------- */
+.ludo-board {
+  /* Never taller than the screen can show next to the status line and the top bar. */
+  position: relative; width: min(100%, 540px, max(300px, calc(100vh - 150px))); aspect-ratio: 1; margin: 0 auto;
+  width: min(100%, 540px, max(300px, calc(100dvh - 150px)));
+  border-radius: 22px; background: #fffdf8;
+  /* A warm wooden frame around the board. */
+  box-shadow:
+    0 0 0 6px #d9a15b,
+    0 0 0 9px #b87a36,
+    0 16px 30px 4px rgba(120, 70, 20, 0.35);
+  touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;
+}
+.ludo-svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; border-radius: 22px; }
+.ludo-layer { position: absolute; inset: 0; }
+
+.base-ov { position: absolute; width: 40%; height: 40%; pointer-events: none; border-radius: 12%; transition: background 0.3s; }
+.base-ov.off { background: rgba(255, 253, 248, 0.72); }
+.base-ov.now::after, .base-ov.won::after {
+  content: ""; position: absolute; inset: 3%; border-radius: 12%;
+  border: 4px solid #fff; box-shadow: 0 0 0 3px var(--c); animation: baseglow 1.4s ease-in-out infinite;
+}
+.base-ov.won::after { animation-duration: 0.8s; }
+@keyframes baseglow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.55; transform: scale(0.97); }
+}
+
+/* ---------- pawns ---------- */
+.tok, .dest {
+  position: absolute; margin: 0; padding: 0;
+  left: calc(var(--x) * 100% / 15); top: calc(var(--y) * 100% / 15);
+  transform: translate(-50%, -50%);
+  -webkit-tap-highlight-color: transparent;
+}
+.tok {
+  --cd: color-mix(in srgb, var(--c) 62%, #000);
+  z-index: 2; pointer-events: none; /* taps go to the board, which picks the nearest movable pawn (pick.js) */
+  width: calc(var(--s, 0.78) * 100% / 15); height: calc(var(--s, 0.78) * 100% / 15);
+  border: 0; background: transparent; cursor: default; border-radius: 40%;
+  transition: left 0.14s ease-in-out, top 0.14s ease-in-out, width 0.2s, height 0.2s;
+}
+.tok svg { position: absolute; left: -12%; top: -34%; width: 124%; height: 146%; overflow: visible; filter: drop-shadow(0 1.5px 1.5px rgba(60, 30, 0, 0.45)); }
+.tok .pw-fill { fill: var(--c); stroke: var(--cd); stroke-width: 2.4; stroke-linejoin: round; }
+.tok .pw-shine { fill: #fff; opacity: 0.75; }
+.tok .pw-ground { fill: rgba(60, 30, 0, 0.18); }
+.tok.far { transition-duration: 0.45s; }
+.tok.moving { z-index: 6; }
+.tok.can { z-index: 5; cursor: pointer; pointer-events: auto; }
+/* Only the drawing hops; the button itself stays still so it is easy to tap. */
+.tok.can svg { filter: drop-shadow(0 0 3px #fff) drop-shadow(0 0 6px var(--c)) drop-shadow(0 2px 2px rgba(60, 30, 0, 0.4)); animation: pawnhop 0.9s ease-in-out infinite; }
+.tok.only::after {
+  content: ""; position: absolute; inset: -18% -18% -18% -18%; border-radius: 50%;
+  border: 2.5px dashed var(--cd); animation: spin 4s linear infinite; pointer-events: none;
+}
+.tok:focus-visible, .dest:focus-visible { outline: 3px solid var(--text); outline-offset: 3px; border-radius: 50%; }
+@keyframes pawnhop {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-14%); }
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.dest {
+  z-index: 4; cursor: pointer; pointer-events: auto; border-radius: 50%;
+  width: calc(0.92 * 100% / 15); height: calc(0.92 * 100% / 15);
+  border: 3px dashed var(--c); background: color-mix(in srgb, var(--c) 22%, #fff);
+  box-shadow: 0 0 0 3px #fff;
+  animation: destpulse 0.8s ease-in-out infinite alternate;
+}
+.dest.cap { border-style: solid; background: color-mix(in srgb, var(--c) 38%, #fff); }
+@keyframes destpulse { from { opacity: 0.55; } to { opacity: 1; } }
+
+/* ---------- die and log ---------- */
+.ludo-controls {
+  display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: center;
+  padding: 14px 16px; background: var(--surface); border: 1px solid var(--edge); border-radius: 24px; box-shadow: var(--shadow);
+}
+.die {
+  --c: #ffffff; --ring: var(--accent);
+  position: relative; flex: none; width: 80px; height: 80px; padding: 12px; border: 0; border-radius: 22px; cursor: pointer;
+  background: linear-gradient(150deg, #ffffff 0%, #fbf6ee 55%, #efe4d2 100%);
+  box-shadow:
+    inset 0 -4px 0 rgba(120, 80, 20, 0.12),
+    inset 0 2px 0 #fff,
+    0 6px 0 #d8c7a8,
+    0 0 0 3px var(--ring),
+    0 12px 22px -6px rgba(120, 80, 20, 0.45);
+  transition: transform 0.08s, filter 0.2s;
+}
+.die .pips { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); width: 100%; height: 100%; }
+.die .pips i {
+  width: 13px; height: 13px; border-radius: 50%; place-self: center; opacity: 0;
+  background: radial-gradient(circle at 35% 30%, #4b5268, #151923 70%);
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.5), 0 1px 0 #fff;
+}
+.die .pips i.on { opacity: 1; }
+.die .roll-word {
+  position: absolute; inset: 0; display: none; place-items: center;
+  font-family: var(--display); font-weight: 700; font-size: 24px; color: var(--text);
+}
+.die.blank .pips { visibility: hidden; }
+.die.blank .roll-word { display: grid; }
+.die:disabled { cursor: default; filter: saturate(0.85); }
+.die:not(:disabled):active { transform: translateY(4px); }
+.die.ready { animation: dieready 1.2s ease-in-out infinite; }
+.die.rolling { animation: tumble 0.42s linear infinite; filter: none; }
+.die.landed { animation: land 0.3s ease-out; }
+.die:focus-visible { outline: 3px solid var(--text); outline-offset: 6px; }
+/* The die stays put (so it is easy to tap) and its ring pulses instead. */
+@keyframes dieready {
+  0%, 100% { box-shadow: inset 0 -4px 0 rgba(120, 80, 20, 0.12), inset 0 2px 0 #fff, 0 6px 0 #d8c7a8, 0 0 0 3px var(--ring), 0 0 0 3px color-mix(in srgb, var(--ring) 60%, transparent), 0 12px 22px -6px rgba(120, 80, 20, 0.45); }
+  50% { box-shadow: inset 0 -4px 0 rgba(120, 80, 20, 0.12), inset 0 2px 0 #fff, 0 6px 0 #d8c7a8, 0 0 0 3px var(--ring), 0 0 0 12px transparent, 0 12px 22px -6px rgba(120, 80, 20, 0.45); }
+}
+@keyframes tumble {
+  0% { transform: rotate(0deg) scale(1); }
+  25% { transform: rotate(90deg) scale(0.88) translateY(-6px); }
+  50% { transform: rotate(180deg) scale(1.06); }
+  75% { transform: rotate(270deg) scale(0.88) translateY(-4px); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+@keyframes land { 0% { transform: scale(1.2); } 60% { transform: scale(0.94); } 100% { transform: none; } }
+
+.ludo-info { min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.ludo-log { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; min-height: 46px; align-content: center; }
+.ludo-log li { font-size: 14px; font-weight: 600; line-height: 1.35; color: var(--muted); }
+.ludo-log li:first-child { font-size: 16px; font-weight: 800; color: var(--text); }
+.ludo-log:empty::before { content: "Tap the die to roll."; color: var(--muted); font-size: 15px; font-weight: 700; }
+.ludo-skip { width: auto; align-self: flex-start; }
+
+/* ---------- players ---------- */
+.ludo-players { grid-template-columns: 1fr 1fr; }
+.ludo-players li { gap: 10px; padding: 9px 10px; min-width: 0; background: var(--surface); box-shadow: 0 3px 0 var(--edge); transition: border-color 0.2s, background 0.2s; }
+.ludo-players li.now { border-color: var(--c); background: color-mix(in srgb, var(--c) 12%, #fff); box-shadow: 0 3px 0 color-mix(in srgb, var(--c) 70%, #000 8%); }
+.ludo-players li.gone { opacity: 0.5; }
+.ludo-players .avatar, .ludo-standings .avatar, .ludo-lineup .avatar { width: 34px; height: 34px; font-size: 16px; }
+.ludo-players .who { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; line-height: 1.2; }
+.ludo-players .who .name { flex: none; font-size: 15px; }
+.ludo-players .tags { display: flex; gap: 4px 6px; flex-wrap: wrap; align-items: center; }
+.ludo-players .tags:empty, .ludo-players .hc:empty { display: none; }
+.ludo-players .hc { font-size: 12px; font-weight: 800; color: var(--muted); white-space: nowrap; }
+.ludo-players .tag { font-size: 11px; padding: 0 6px; }
+.pawns { flex: none; display: grid; grid-template-columns: repeat(2, 11px); gap: 3px; }
+.pawns i { width: 11px; height: 11px; border-radius: 50%; border: 2.5px solid color-mix(in srgb, var(--c) 35%, #fff); }
+.pawns i.out { border-color: var(--c); }
+.pawns i.home { border-color: var(--c); background: var(--c); }
+
+/* ---------- game over ---------- */
+.ludo-over {
+  position: relative; overflow: hidden; display: grid; gap: 12px; justify-items: center; text-align: center;
+  border: 3px solid var(--c); background: color-mix(in srgb, var(--c) 8%, #fff);
+}
+.ludo-over::before, .ludo-over::after {
+  content: ""; position: absolute; inset: -20% 0 auto 0; height: 140%; pointer-events: none;
+  background:
+    radial-gradient(circle, var(--red) 0 4px, transparent 5px) 10% 0 / 90px 70px,
+    radial-gradient(circle, var(--green) 0 4px, transparent 5px) 40% 10px / 110px 80px,
+    radial-gradient(circle, var(--yellow) 0 5px, transparent 6px) 70% 30px / 100px 90px,
+    radial-gradient(circle, var(--blue) 0 4px, transparent 5px) 90% 5px / 120px 75px;
+  opacity: 0.55; animation: confetti 4s linear infinite;
+}
+.ludo-over::after { animation-duration: 6s; animation-delay: -2s; opacity: 0.35; transform: scaleX(-1); }
+@keyframes confetti { from { translate: 0 -30%; } to { translate: 0 20%; } }
+.ludo-over > * { position: relative; z-index: 1; }
+.ludo-over .trophy svg { display: block; width: 72px; height: 72px; filter: drop-shadow(0 6px 10px color-mix(in srgb, var(--c) 45%, transparent)); animation: bob 2.4s ease-in-out infinite; }
+.ludo-over .kicker { color: var(--muted); }
+.over-title { margin: 0; font-family: var(--display); font-weight: 700; font-size: 44px; line-height: 1; color: var(--text); }
+.ludo-standings { list-style: none; margin: 4px 0; padding: 0; display: grid; gap: 8px; width: 100%; }
+.ludo-standings li { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 16px; background: var(--surface); border: 2px solid var(--edge); text-align: left; }
+.ludo-standings li:first-child { border-color: var(--c); background: color-mix(in srgb, var(--c) 14%, #fff); }
+.ludo-standings .place { width: 20px; font-family: var(--display); font-weight: 700; font-size: 22px; color: var(--muted); }
+.ludo-standings .name { flex: 1; min-width: 0; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ludo-standings .res { font-size: 13px; font-weight: 800; color: var(--muted); white-space: nowrap; }
+
+/* ---------- local setup ---------- */
+.ludo-setup .seg button { min-height: 58px; font-size: 26px; }
+.ludo-lineup li { border-left: 6px solid var(--c); }
+
+@media (max-width: 360px) {
+  .ludo-players { grid-template-columns: 1fr; }
+  .die { width: 70px; height: 70px; padding: 10px; }
+  .code-tiles span { width: 54px; height: 64px; font-size: 36px; }
+}
+
+/* ---------- wide screens: board on the left, everything else beside it ---------- */
+@media (min-width: 980px) and (min-height: 620px) {
+  .ludo {
+    --w: min(1080px, calc(100vw - 48px));
+    width: var(--w); margin-left: calc((100% - var(--w)) / 2);
+    display: grid; grid-template-columns: minmax(0, 1fr) 360px; grid-template-rows: repeat(5, auto) 1fr;
+    column-gap: 30px; row-gap: 12px; align-items: start;
+  }
+  .ludo > * { grid-column: 2; }
+  .ludo > .ludo-board { grid-column: 1; grid-row: 1 / -1; width: min(100% - 18px, calc(100dvh - 130px)); margin-top: 9px; }
+  .ludo-players { grid-template-columns: 1fr; }
+}
+
+/* ---------- phones held sideways and other short screens: board on the left, sized to the height ---------- */
+@media (min-aspect-ratio: 4/3) and (max-height: 619px) {
+  .ludo {
+    --b: max(220px, min(calc(100vh - 100px), calc(100vw - 350px)));
+    --w: min(1080px, calc(100vw - max(32px, env(safe-area-inset-left) + env(safe-area-inset-right) + 16px)));
+    width: var(--w); margin-left: calc((100% - var(--w)) / 2);
+    display: grid; grid-template-columns: var(--b) minmax(0, 380px); justify-content: center;
+    grid-template-rows: repeat(5, auto) 1fr; column-gap: 22px; row-gap: 10px; align-items: start;
+  }
+  @supports (height: 100dvh) { .ludo { --b: max(220px, min(calc(100dvh - 100px), calc(100vw - 350px))); } }
+  .ludo > * { grid-column: 2; }
+  .ludo > .ludo-board { grid-column: 1; grid-row: 1 / -1; width: var(--b); margin-top: 9px; }
+  .ludo .turn { min-height: 44px; padding: 8px 12px; }
+  .ludo-controls { padding: 10px 12px; gap: 12px; }
+  .die { width: 64px; height: 64px; padding: 9px; border-radius: 18px; }
+  .die .pips i { width: 10px; height: 10px; }
+  .die .roll-word { font-size: 20px; }
+  .ludo-players li { padding: 6px 8px; }
+}

@@ -1,0 +1,5 @@
+Third-party library bundled with this site
+
+mqtt.min.js - MQTT.js 5.16.0
+https://github.com/mqttjs/MQTT.js
+License: MIT
