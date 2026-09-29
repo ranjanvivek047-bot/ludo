@@ -1,0 +1,7 @@
+node_modules/
+test/shots/
+test/shots-*.png
+test/_*
+test/dbg-*
+submission/
+.DS_Store

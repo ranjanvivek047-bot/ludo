@@ -1,0 +1,17 @@
+{
+  "name": "ludo-tests",
+  "version": "1.0.0",
+  "description": "Tests for Ludo",
+  "scripts": {
+    "test": "node --test ludo.test.mjs",
+    "e2e": "node ludo.e2e.mjs",
+    "serve": "python3 -m http.server 8767 --directory ../site"
+  },
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "mqtt": "^5.16.0",
+    "playwright": "^1.63.0"
+  },
+  "private": true
+}
